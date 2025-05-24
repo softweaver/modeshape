@@ -35,30 +35,41 @@
             <groupId>org.modeshape</groupId>
             <artifactId>modeshape-schematic</artifactId>
         </dependency>
+        <!-- Oak Dependencies -->
         <dependency>
-            <groupId>org.modeshape</groupId>
-            <artifactId>modeshape-persistence-relational</artifactId>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>oak-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.modeshape</groupId>
-            <artifactId>modeshape-persistence-file</artifactId>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>oak-jcr</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>oak-segment-tar</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>oak-lucene</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>oak-commons</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>jackrabbit-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>jackrabbit-jcr-commons</artifactId>
         </dependency>
         <!--Event bus clustering. Note the scope in the parent (provided) - this should be optional from a MS perspective -->
         <dependency>
             <groupId>org.jgroups</groupId>
             <artifactId>jgroups</artifactId>
         </dependency>
-        <!-- Heap and file-based maps -->
-        <dependency>
-            <groupId>org.mapdb</groupId>
-            <artifactId>mapdb</artifactId>
-        </dependency>
-        <!-- Workspace cache -->
-
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-        </dependency>
+        <!-- Workspace cache and mapdb removed -->
         
         <!-- MIME-type detection. This can be excluded in applications and components that depend on ModeShape
              if MIME type detection is to be disabled in ModeShape. -->

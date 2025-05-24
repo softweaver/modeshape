@@ -15,15 +15,25 @@
  */
 package org.modeshape.jcr;
 
+import java.io.File;
 import java.net.URL;
 import java.util.Map;
 import java.util.ServiceLoader;
-import java.util.concurrent.TimeUnit;
+// import java.util.concurrent.TimeUnit; // Not used anymore
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
+import org.apache.jackrabbit.oak.Oak;
+import org.apache.jackrabbit.oak.jcr.Jcr;
+import org.apache.jackrabbit.oak.segment.SegmentNodeStore;
+import org.apache.jackrabbit.oak.segment.SegmentNodeStoreBuilders;
+import org.apache.jackrabbit.oak.segment.file.FileStore; // Added for clarity, though FileStoreBuilder is used
+import org.apache.jackrabbit.oak.segment.file.FileStoreBuilder;
+// import org.apache.jackrabbit.oak.segment.file.InvalidFileStoreVersionException; // Not directly used
+
 import org.modeshape.common.annotation.ThreadSafe;
 import org.modeshape.common.logging.Logger;
 import org.modeshape.jcr.api.RepositoryFactory;
+// import org.modeshape.jcr.ModeShapeEngine; // Not used anymore
 
 /**
  * Service provider for the JCR2 {@code RepositoryFactory} interface. This class provides a single public method,
@@ -88,7 +98,7 @@ public class JcrRepositoryFactory implements RepositoryFactory {
     /**
      * The container which hold the engine and which is responsible for initializing & returning the repository.
      */
-    private static final JcrRepositoriesContainer CONTAINER = new JcrRepositoriesContainer();
+    // private static final JcrRepositoriesContainer CONTAINER = new JcrRepositoriesContainer(); // Commented out
 
     /**
      * Returns a reference to the appropriate repository for the given parameter map, if one exists. Although the
@@ -116,12 +126,48 @@ public class JcrRepositoryFactory implements RepositoryFactory {
     @Override
     @SuppressWarnings( "rawtypes" )
     public Repository getRepository( Map parameters ) throws RepositoryException {
-        LOG.debug("Trying to load ModeShape JCR Repository with parameters: " + parameters);
-        return CONTAINER.getRepository(null, parameters);
+        LOG.debug("Attempting to initialize an Apache Jackrabbit Oak repository. Parameters (largely ignored): " + parameters);
+
+        try {
+            // Define the directory for the Oak repository FileStore
+            File oakRepoDir = new File("target/oak-repo");
+            if (!oakRepoDir.exists()) {
+                if (oakRepoDir.mkdirs()) {
+                    LOG.info("Created Oak repository directory: " + oakRepoDir.getAbsolutePath());
+                } else {
+                    LOG.error("Failed to create Oak repository directory: " + oakRepoDir.getAbsolutePath());
+                    throw new RepositoryException("Failed to create Oak repository directory: " + oakRepoDir.getAbsolutePath());
+                }
+            } else {
+                LOG.info("Using existing Oak repository directory: " + oakRepoDir.getAbsolutePath());
+            }
+
+            // Initialize the FileStore
+            // The FileStoreBuilder.fileStoreBuilder(oakRepoDir).build() call handles creating the FileStore
+            // SegmentNodeStore will use this FileStore
+            FileStore fs = FileStoreBuilder.fileStoreBuilder(oakRepoDir).build();
+            SegmentNodeStore nodeStore = SegmentNodeStoreBuilders.builder(fs).build();
+            
+            // Create an Oak instance and then a Jcr repository
+            Oak oak = new Oak(nodeStore);
+            Jcr jcr = new Jcr(oak); // JCR layer on top of Oak
+            Repository repository = jcr.createRepository(); // This is the javax.jcr.Repository
+
+            LOG.info("Successfully initialized an Apache Jackrabbit Oak JCR Repository at " + oakRepoDir.getAbsolutePath());
+            return repository;
+        } catch (Exception e) { // Catching a broader exception class for now
+            LOG.error("Failed to initialize Apache Jackrabbit Oak repository", e);
+            // Consider if a more specific exception should be thrown or if RepositoryException is appropriate
+            throw new RepositoryException("Failed to initialize Apache Jackrabbit Oak repository: " + e.getMessage(), e);
+        }
     }
 
-    protected boolean shutdown( long timeout,
-                             TimeUnit unit ) throws InterruptedException {
-        return CONTAINER.shutdown(timeout, unit);
-    }
+    // protected boolean shutdown( long timeout,
+    //                             TimeUnit unit ) throws InterruptedException {
+    //     // This logic was related to the ModeShapeEngine/JcrRepositoriesContainer
+    //     // and is no longer applicable with the direct Oak setup.
+    //     // return CONTAINER.shutdown(timeout, unit);
+    //     LOG.info("Shutdown method called, but no active ModeShape container to shut down with direct Oak integration.");
+    //     return true; // Or false, depending on desired behavior for a no-op shutdown
+    // }
 }
